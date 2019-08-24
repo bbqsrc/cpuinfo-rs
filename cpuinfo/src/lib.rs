@@ -67,6 +67,7 @@ impl Core {
         Cluster(unsafe { *self.0 }.cluster)
     }
 
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     pub fn cpuid(&self) -> u32 {
         unsafe { *self.0 }.cpuid
     }
