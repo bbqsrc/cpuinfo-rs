@@ -185,6 +185,16 @@ pub fn clusters() -> Clusters {
     Clusters::new(0, unsafe { cpuinfo_get_clusters_count() })
 }
 
+#[cfg(target_os = "linux")]
+pub fn current_core() -> Core {
+    Core(unsafe { cpuinfo_get_current_core() })
+}
+
+#[cfg(target_os = "linux")]
+pub fn current_processor() -> Processor {
+    Processor(unsafe { cpuinfo_get_current_processor() })
+}
+
 iter!(Processors, Processor, cpuinfo_get_processor);
 iter!(Packages, Package, cpuinfo_get_package);
 iter!(Cores, Core, cpuinfo_get_core);
