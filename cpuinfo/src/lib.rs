@@ -39,15 +39,17 @@ macro_rules! iter {
     }
 }
 
+pub use cpuinfo_sys::{cpuinfo_uarch, cpuinfo_vendor};
+
 #[repr(transparent)]
 pub struct Core(*const cpuinfo_core);
 
 impl Core {
-    pub fn vendor(&self) -> u32 {
+    pub fn vendor(&self) -> cpuinfo_vendor {
         unsafe { *self.0 }.vendor
     }
 
-    pub fn microarch(&self) -> u32 {
+    pub fn microarch(&self) -> cpuinfo_uarch {
         unsafe { *self.0 }.uarch
     }
     
@@ -206,6 +208,7 @@ mod tests {
 
     #[test]
     fn smoke() {
-        println!("{:?}", processors().next().unwrap().package().name());
+        let core = processors().next().unwrap().core();
+        println!("{:?} {:?}", core.vendor(), core.microarch());
     }
 }

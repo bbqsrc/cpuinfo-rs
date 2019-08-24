@@ -15,6 +15,7 @@ fn main() {
 
     let bindings = bindgen::Builder::default()
         .header(&format!("{}/include/cpuinfo.h", dest.display()))
+        .rustified_enum("cpuinfo_(vendor|uarch)")
         .generate()
         .expect("Unable to generate bindings");
     let out_path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
