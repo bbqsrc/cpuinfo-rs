@@ -1,0 +1,12 @@
+[package]
+name = "cpuinfo-rs"
+version = "0.1.0"
+authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
+edition = "2018"
+
+[lib]
+name = "cpuinfo"
+
+[dependencies]
+cpuinfo-sys = { path = "../cpuinfo-sys" }
+ctor = "0.1.10"
