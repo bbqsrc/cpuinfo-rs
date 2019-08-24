@@ -1,9 +1,42 @@
 use ctor::ctor;
 use cpuinfo_sys::*;
+use std::fmt::{self, Debug};
+use std::ffi::CStr;
 
 #[ctor]
 fn init() {
     unsafe { cpuinfo_initialize() };
+}
+
+macro_rules! iter {
+    ($Name:ident, $Type:ident, $fn:tt) => {
+        pub struct $Name {
+            cur: u32,
+            total: u32,
+        }
+
+        impl $Name {
+            fn new(start: u32, count: u32) -> $Name {
+                $Name {
+                    cur: start, total: count + start,
+                }
+            }
+        }
+
+        impl Iterator for $Name {
+            type Item = $Type;
+
+            fn next(&mut self) -> Option<$Type> {
+                if self.cur >= self.total {
+                    return None;
+                }
+
+                let x = $Type(unsafe { $fn(self.cur) });
+                self.cur += 1;
+                Some(x)
+            }
+        }
+    }
 }
 
 #[repr(transparent)]
@@ -55,90 +88,6 @@ impl Cluster {
 #[repr(transparent)]
 pub struct Package(*const cpuinfo_package);
 
-use std::ffi::CStr;
-
-pub struct Processors {
-    cur: u32,
-    total: u32,
-}
-
-impl Processors {
-    fn new(start: u32, count: u32) -> Processors {
-        Processors {
-            cur: start, total: count + start,
-        }
-    }
-}
-
-impl Iterator for Processors {
-    type Item = Processor;
-
-    fn next(&mut self) -> Option<Processor> {
-        if self.cur >= self.total {
-            return None;
-        }
-
-        let processor = Processor(unsafe { cpuinfo_get_processor(self.cur) });
-        self.cur += 1;
-        Some(processor)
-    }
-}
-
-
-pub struct Cores {
-    cur: u32,
-    total: u32,
-}
-
-impl Cores {
-    fn new(start: u32, count: u32) -> Cores {
-        Cores {
-            cur: start, total: count + start,
-        }
-    }
-}
-
-impl Iterator for Cores {
-    type Item = Core;
-
-    fn next(&mut self) -> Option<Core> {
-        if self.cur >= self.total {
-            return None;
-        }
-
-        let core = Core(unsafe { cpuinfo_get_core(self.cur) });
-        self.cur += 1;
-        Some(core)
-    }
-}
-
-pub struct Clusters {
-    cur: u32,
-    total: u32,
-}
-
-impl Clusters {
-    fn new(start: u32, count: u32) -> Clusters {
-        Clusters {
-            cur: start, total: count + start
-        }
-    }
-}
-
-impl Iterator for Clusters {
-    type Item = Cluster;
-
-    fn next(&mut self) -> Option<Cluster> {
-        if self.cur >= self.total {
-            return None;
-        }
-
-        let cluster = Cluster(unsafe { cpuinfo_get_cluster(self.cur) });
-        self.cur += 1;
-        Some(cluster)
-    }
-}
-
 impl Package {
     pub fn name(&self) -> String {
         let ptr = unsafe { *self.0 }.name;
@@ -186,8 +135,6 @@ impl Processor {
     }
 }
 
-use std::fmt::{self, Debug};
-
 impl Debug for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Package")
@@ -222,14 +169,26 @@ impl Debug for Core {
     }
 }
 
-
 pub fn processors() -> Processors {
     Processors::new(0, unsafe { cpuinfo_get_processors_count() })
 }
 
-// pub fn packages() -> Packages {
-//     Packages::new(0, cpuinfo_get_packages_count() as usize)
-// }
+pub fn packages() -> Packages {
+    Packages::new(0, unsafe { cpuinfo_get_packages_count() })
+}
+
+pub fn cores() -> Cores {
+    Cores::new(0, unsafe { cpuinfo_get_cores_count() })
+}
+
+pub fn clusters() -> Clusters {
+    Clusters::new(0, unsafe { cpuinfo_get_clusters_count() })
+}
+
+iter!(Processors, Processor, cpuinfo_get_processor);
+iter!(Packages, Package, cpuinfo_get_package);
+iter!(Cores, Core, cpuinfo_get_core);
+iter!(Clusters, Cluster, cpuinfo_get_cluster);
 
 #[cfg(test)]
 mod tests {
